@@ -36,10 +36,11 @@ dependencies:
   sqflite: ^2.3.2
   path_provider: ^2.1.2
   
-  # Authentication (temporarily disabled for web testing)
-  # firebase_core: ^2.24.2
-  # firebase_auth: ^4.16.0
-  # google_sign_in: ^6.2.1
+  # Authentication - Compatible Versions
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  google_sign_in: ^6.1.6
+  cloud_firestore: ^4.13.6
   
   # Utilities
   intl: ^0.20.2
@@ -48,6 +49,7 @@ dependencies:
   geolocator: ^10.1.0
   permission_handler: ^11.2.0
   flutter_local_notifications: ^18.0.1
+  uuid: ^4.2.2
   
   # Calendar and Events
   table_calendar: ^3.0.9
@@ -59,9 +61,6 @@ dependencies:
   google_maps_flutter: ^2.5.0
   location: ^5.0.3
   timezone: ^0.10.0
-  firebase_auth: ^5.5.2
-  cloud_firestore: ^5.6.6
-  google_sign_in: ^6.3.0
   flutter_dotenv: ^5.2.1
 
 dev_dependencies:
@@ -80,3 +79,4 @@ flutter:
     - assets/icons/
     - assets/animations/
     - .env
+    - assets/oklahoma_christian_university_data.json

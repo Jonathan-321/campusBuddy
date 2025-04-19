@@ -53,23 +53,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-import 'config/router/app_router.dart';
-import 'domain/usecases/events_usecase.dart';
-import 'domain/usecases/campus_ai_usecases.dart';
-import 'domain/repositories/campus_ai_repository.dart';
-import 'data/repositories/campus_ai_repository_impl.dart';
-import 'data/services/claude_api_service.dart';
-import 'presentation/blocs/auth/auth_bloc.dart';
-import 'presentation/blocs/auth/auth_event.dart';
-import 'presentation/blocs/campus_ai/campus_ai_bloc.dart';
-import 'logic/blocs/courses/courses_bloc.dart';
-import 'presentation/blocs/events/events_bloc.dart';
-import 'presentation/blocs/events/events_event.dart';
-import 'services/notification_service.dart';
+import 'app.dart';
+import 'firebase_options.dart';
+import 'utils/env_config.dart';
+import 'data/services/ai_service.dart';
+import 'domain/usecases/auth_usecase.dart';
 
 /// Application entry point
 ///
@@ -79,15 +70,42 @@ import 'services/notification_service.dart';
 /// 3. Screen orientation
 /// 4. Required use cases
 /// 5. Main app widget
-void main() async {
+Future<void> main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
+  // Load .env file for API keys and configuration
   await dotenv.load(fileName: '.env');
+  debugPrint('Environment variables loaded successfully');
 
-  // Initialize notifications service
-  await NotificationService().initialize();
+  // Validate AI configuration
+  if (EnvConfig.validateAiConfig()) {
+    debugPrint('AI configuration validated successfully');
+  } else {
+    debugPrint(
+        'Warning: AI configuration is incomplete. Some features may not work.');
+  }
+
+  // Initialize Firebase safely (only if not already initialized)
+  try {
+    // Check if Firebase is already initialized to avoid duplicate initialization
+    if (!Firebase.apps.isNotEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('Firebase initialized successfully');
+    } else {
+      debugPrint('Firebase was already initialized');
+    }
+  } catch (e) {
+    debugPrint('Error initializing Firebase: $e');
+    // Continue without Firebase if there's an error
+  }
+
+  // Preload university data for AI assistant
+  final aiService = AiService();
+  await aiService.loadUniversityData();
+  debugPrint('University data loading attempted');
 
   // Set preferred screen orientations
   SystemChrome.setPreferredOrientations([
@@ -95,161 +113,11 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Create EventsUseCase instance for event management
-  final eventsUseCase = EventsUseCase();
-
-  // Initialize shared preferences for local storage
-  final sharedPreferences = await SharedPreferences.getInstance();
-
-  // Create ClaudeApiService for AI chat - using API key from environment variables
-  final claudeApiService = ClaudeApiService(
-    apiKey: dotenv.env['CLAUDE_API_KEY'] ?? '',
-    model: dotenv.env['CLAUDE_MODEL'] ?? 'claude-3-haiku-20240307',
-  );
-
-  // Create repository implementation
-  final campusAIRepository = CampusAIRepositoryImpl(
-    claudeApiService,
-    sharedPreferences,
-  );
-
-  // Create AI use cases
-  final sendMessageUseCase = SendMessageUseCase(campusAIRepository);
-  final getConversationHistoryUseCase =
-      GetConversationHistoryUseCase(campusAIRepository);
-  final clearConversationUseCase = ClearConversationUseCase(campusAIRepository);
+  // Create auth use case
+  final authUseCase = AuthUseCase();
 
   // Run the application with required dependencies
-  runApp(MyApp(
-    eventsUseCase: eventsUseCase,
-    sendMessageUseCase: sendMessageUseCase,
-    getConversationHistoryUseCase: getConversationHistoryUseCase,
-    clearConversationUseCase: clearConversationUseCase,
+  runApp(App(
+    authUseCase: authUseCase,
   ));
-}
-
-/// Root application widget
-///
-/// Configures:
-/// 1. Theme (light/dark)
-/// 2. State management (BLoCs)
-/// 3. Navigation (GoRouter)
-/// 4. App-wide configurations
-class MyApp extends StatelessWidget {
-  final EventsUseCase eventsUseCase;
-  final SendMessageUseCase sendMessageUseCase;
-  final GetConversationHistoryUseCase getConversationHistoryUseCase;
-  final ClearConversationUseCase clearConversationUseCase;
-
-  const MyApp({
-    super.key,
-    required this.eventsUseCase,
-    required this.sendMessageUseCase,
-    required this.getConversationHistoryUseCase,
-    required this.clearConversationUseCase,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        // Authentication state management
-        BlocProvider<AuthBloc>(
-          create: (context) => AuthBloc.noAuth()..add(AuthCheckRequested()),
-        ),
-        // Courses state management
-        BlocProvider<CoursesBloc>(
-          create: (context) => CoursesBloc(),
-        ),
-        // Events state management
-        BlocProvider<EventsBloc>(
-          create: (context) => EventsBloc(eventsUseCase)..add(LoadEvents()),
-        ),
-        // Campus Oracle AI chat state management
-        BlocProvider<CampusAIBloc>(
-          create: (context) => CampusAIBloc(
-            sendMessage: sendMessageUseCase,
-            getConversationHistory: getConversationHistoryUseCase,
-            clearConversation: clearConversationUseCase,
-          ),
-        ),
-      ],
-      child: MaterialApp.router(
-        title: 'Campus Buddy',
-        // Light theme configuration
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          useMaterial3: true,
-          scaffoldBackgroundColor: Colors.white,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: true,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          cardTheme: CardTheme(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            filled: true,
-            fillColor: Colors.grey[100],
-          ),
-        ),
-        // Dark theme configuration
-        darkTheme: ThemeData.dark().copyWith(
-          useMaterial3: true,
-          primaryColor: Colors.blue,
-          scaffoldBackgroundColor: Colors.grey[900],
-          appBarTheme: AppBarTheme(
-            backgroundColor: Colors.grey[850],
-            elevation: 0,
-            centerTitle: true,
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          cardTheme: CardTheme(
-            color: Colors.grey[850],
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            filled: true,
-            fillColor: Colors.grey[800],
-          ),
-        ),
-        themeMode: ThemeMode.system,
-        debugShowCheckedModeBanner: false,
-        routerConfig: AppRouter.router,
-      ),
-    );
-  }
 }

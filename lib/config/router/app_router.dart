@@ -1,7 +1,7 @@
 /// Campus Buddy - Navigation Configuration
 ///
 /// This file configures the application's navigation using GoRouter.
-/// It defines all possible routes and their corresponding screens.
+/// It defines the essential routes for the app.
 ///
 /// Navigation Structure:
 /// 1. Root Routes:
@@ -10,15 +10,8 @@
 ///
 /// 2. Main App Shell (Bottom Navigation):
 ///    - Home (/home)
-///    - Events (/events)
-///    - Courses (/courses)
-///    - Map (/map)
+///    - Campus Oracle (/campus-oracle)
 ///    - Profile (/profile)
-///
-/// 3. Nested Routes:
-///    - Event Details (/events/:id)
-///    - Course Details (/courses/:id)
-///    - Other feature-specific screens
 ///
 /// Navigation Keys:
 /// - _rootNavigatorKey: For root-level navigation
@@ -37,21 +30,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 // Import screens
-import '../../presentation/screens/home/home_screen.dart';
+import '../../presentation/screens/home_screen.dart';
 import '../../presentation/screens/auth/login_screen.dart';
 import '../../presentation/screens/auth/signup_screen.dart';
 import '../../presentation/screens/splash/splash_screen.dart';
-import '../../presentation/screens/assignments/assignments_screen.dart';
-import '../../presentation/screens/courses/courses_screen.dart';
-import '../../presentation/screens/dining/dining_screen.dart';
-import '../../presentation/screens/events/events_screen.dart';
-import '../../presentation/screens/map/map_screen.dart';
-import '../../presentation/screens/profile/profile_screen.dart';
-import '../../presentation/screens/schedule/schedule_screen.dart';
-import '../../presentation/screens/transit/transit_screen.dart';
-import '../../presentation/screens/courses/course_detail_screen.dart';
-import '../../presentation/screens/events/event_detail_screen.dart';
-import '../../presentation/screens/chat/campus_oracle_screen.dart';
+import '../../presentation/screens/profile_screen.dart';
+import '../../presentation/screens/campus_oracle_screen.dart';
 
 /// AppRouter handles all navigation in the app using GoRouter
 class AppRouter {
@@ -96,66 +80,16 @@ class AppRouter {
             builder: (context, state) => const HomeScreen(),
           ),
 
-          // Events tab
+          // Campus Oracle tab
           GoRoute(
-            path: '/events',
-            builder: (context, state) => const EventsScreen(),
-          ),
-          // Event details
-          GoRoute(
-            path: '/events/:id',
-            builder: (context, state) => EventDetailScreen(
-              eventId: state.pathParameters['id'] ?? '',
-            ),
+            path: '/campus-oracle',
+            builder: (context, state) => const CampusOracleScreen(),
           ),
 
-          // Courses tab
-          GoRoute(
-            path: '/courses',
-            builder: (context, state) => const CoursesScreen(),
-          ),
-          // Course details
-          GoRoute(
-            path: '/courses/:id',
-            builder: (context, state) => CourseDetailScreen(
-              courseId: state.pathParameters['id'] ?? '',
-            ),
-          ),
-
-          // Map tab
-          GoRoute(
-            path: '/map',
-            builder: (context, state) => const MapScreen(),
-          ),
-
-          // Schedule tab
-          GoRoute(
-            path: '/schedule',
-            builder: (context, state) => const ScheduleScreen(),
-          ),
-
-          // Assignments tab
-          GoRoute(
-            path: '/assignments',
-            builder: (context, state) => const AssignmentsScreen(),
-          ),
-          GoRoute(
-            path: '/dining',
-            builder: (context, state) => const DiningScreen(),
-          ),
-          GoRoute(
-            path: '/transit',
-            builder: (context, state) => const TransitScreen(),
-          ),
           // Profile tab
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
-          ),
-          // Campus Oracle route
-          GoRoute(
-            path: '/campus-oracle',
-            builder: (context, state) => const CampusOracleScreen(),
           ),
         ],
       ),
@@ -203,19 +137,9 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
       initialLocation: '/home',
     ),
     _BottomNavItem(
-      icon: Icons.event,
-      label: 'Events',
-      initialLocation: '/events',
-    ),
-    _BottomNavItem(
-      icon: Icons.school,
-      label: 'Courses',
-      initialLocation: '/courses',
-    ),
-    _BottomNavItem(
-      icon: Icons.map,
-      label: 'Map',
-      initialLocation: '/map',
+      icon: Icons.chat,
+      label: 'Campus AI',
+      initialLocation: '/campus-oracle',
     ),
     _BottomNavItem(
       icon: Icons.person,
@@ -260,7 +184,7 @@ class _ScaffoldWithBottomNavBarState extends State<ScaffoldWithBottomNavBar> {
   }
 }
 
-/// Represents a bottom navigation item
+/// Helper class for bottom navigation item configuration
 ///
 /// Contains:
 /// - icon: IconData for the tab

@@ -1,167 +1,73 @@
-# CampusBuddy-1
+# Campus Buddy
 
-**Connect. Discover. Thrive.**
-
-CampusBuddy-1 is your all-in-one companion for navigating campus life. Never miss an important event again with our sleek, intuitive platform that puts the entire campus experience at your fingertips.
+A comprehensive mobile application for university students at Oklahoma Christian University.
 
 ## Features
 
-🎓 **Discover events** that match your interests and academic journey  
-📆 **Track your schedule** with our seamless calendar integration  
-🔔 **Get notified** about upcoming events and registration deadlines  
-👥 **Connect with peers** attending the same events  
-📱 **Access everything** from anywhere - mobile-first design for students on the go
+- **Authentication**: Email and password-based authentication with user profiles
+- **Campus Oracle**: AI-powered chatbot to answer questions about campus life
+  - Conversation storage and history
+  - Multi-language support
+- **Profile Management**: User profile viewing and management
+- **Home Screen**: Dashboard with campus information
 
-## Screenshots
+## Technologies
 
-[Screenshots coming soon]
+- **Frontend**: Flutter for cross-platform mobile development
+- **State Management**: Flutter BLoC pattern
+- **Navigation**: Go Router for declarative routing
+- **AI Integration**: Claude API for natural language processing
+- **Local Storage**: SharedPreferences for persistent data
 
 ## Getting Started
 
 ### Prerequisites
-- Flutter SDK (version 3.0.0 or later)
-- Dart SDK (version 2.17.0 or later)
-- Android Studio / VS Code
-- Git
+
+- Flutter SDK (2.19.0 or higher)
+- Dart SDK
+- An IDE (VS Code, Android Studio, etc.)
+- Anthropic API key for Claude AI
 
 ### Installation
 
-1. Clone the repository
-```bash
-git clone https://github.com/Jonathan-321/CampusBuddy-1.git
-```
+1. Clone the repository:
+   ```
+   git clone https://github.com/Jonathan-321/campusBuddy.git
+   ```
 
-2. Navigate to the project directory
-```bash
-cd CampusBuddy-1
-```
+2. Navigate to the project directory:
+   ```
+   cd campusBuddy
+   ```
 
-3. Get dependencies
-```bash
-flutter pub get
-```
+3. Create a `.env` file in the root directory with the following content:
+   ```
+   CLAUDE_API_KEY=your_claude_api_key
+   CLAUDE_MODEL=claude-3-opus-20240229
+   ```
 
-4. Run the app
-```bash
-flutter run
-```
+4. Install dependencies:
+   ```
+   flutter pub get
+   ```
 
-## Project Structure
-
-The application follows a clean architecture approach with a focus on separation of concerns:
-
-```
-lib/
-├── config/                  # Configuration files
-│   ├── router/              # Routing configuration
-│   └── theme/               # Theme configuration
-├── data/                    # Data layer
-│   ├── models/              # Data models
-│   ├── repositories/        # Repository implementations
-│   └── services/            # External services
-├── domain/                  # Domain layer
-│   ├── entities/            # Business entities
-│   ├── repositories/        # Repository interfaces
-│   └── usecases/            # Business logic use cases
-├── logic/                   # Logic layer (contains legacy code)
-│   └── blocs/               # BLoC implementations
-├── presentation/            # Presentation layer
-│   ├── blocs/               # BLoC state management
-│   ├── screens/             # UI screens
-│   │   ├── auth/            # Authentication screens
-│   │   ├── courses/         # Course-related screens
-│   │   ├── events/          # Event-related screens
-│   │   ├── home/            # Home screen
-│   │   ├── map/             # Campus map screens
-│   │   ├── profile/         # User profile screens
-│   │   └── schedule/        # Schedule screens
-│   └── widgets/             # Reusable UI components
-└── services/                # Core services (notifications, etc.)
-```
-
-### Key Files
-
-- `main.dart`: Application entry point and dependency injection
-- `config/router/app_router.dart`: Route definitions using GoRouter
-- `presentation/blocs/events/events_bloc.dart`: State management for events
-- `domain/entities/event.dart`: Core event entity model
+5. Run the app:
+   ```
+   flutter run
+   ```
 
 ## Architecture
 
-CampusBuddy-1 follows a clean architecture approach with BLoC pattern for state management:
+The application follows a clean architecture approach:
 
-- **Presentation Layer**: UI components and BLoC implementations
-- **Domain Layer**: Entities and use cases that define the core business logic
-- **Data Layer**: Repositories and data sources
+- **Data Layer**: API services, models, repositories
+- **Domain Layer**: Entities, use cases
+- **Presentation Layer**: BLoCs, screens, widgets
 
-### State Management
+## Contributors
 
-The application uses the BLoC (Business Logic Component) pattern to manage state:
-
-- **Events**: Represent user actions or system events
-- **States**: Represent the current state of the application
-- **BLoCs**: Process events and emit new states
-
-## Git Workflow
-
-We follow a feature branch workflow:
-
-1. **Main Branch**: The `main` branch contains production-ready code
-2. **Feature Branches**: Create a new branch for each feature or bugfix
-3. **Pull Requests**: Open a PR for review before merging into main
-
-### Branch Naming Convention
-
-Use the following format for branch names:
-- `feature/short-description` - For new features
-- `bugfix/short-description` - For bug fixes
-- `hotfix/short-description` - For urgent fixes
-- `refactor/short-description` - For code refactoring
-
-### Commit Message Guidelines
-
-Write clear, concise commit messages:
-- Use the present tense ("Add feature" not "Added feature")
-- First line should be 50 characters or less
-- Reference issues when appropriate ("Fix #123: Add event filtering")
-
-## Contributing
-
-We welcome contributions to CampusBuddy-1! Here's how to contribute:
-
-1. **Fork the Repository**: Create your own fork of the project
-2. **Create a Branch**: Create a new branch with a descriptive name
-3. **Make Changes**: Implement your feature or bugfix
-4. **Follow Code Style**: Ensure your code follows our style guidelines
-5. **Write Tests**: Add tests for your changes when applicable
-6. **Submit a PR**: Open a pull request with a clear description
-
-### Code Style Guidelines
-
-- Follow the [Dart Style Guide](https://dart.dev/guides/language/effective-dart/style)
-- Use `flutter format` to format your code
-- Run `flutter analyze` to check for linting issues
-
-## Known Issues
-
-- Event registration currently uses mock data
-- Profile photo upload not yet implemented
-- Push notifications are placeholders
-
-## Roadmap
-
-- [ ] User authentication with Firebase
-- [ ] Real-time event updates
-- [ ] Personalized event recommendations
-- [ ] Social sharing features
-- [ ] Dark mode support
+- Jonathan Muhire
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-Jonathan - [GitHub](https://github.com/Jonathan-321)
-
-*Your campus journey starts here.*

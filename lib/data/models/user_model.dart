@@ -4,24 +4,24 @@ class UserModel extends User {
   UserModel({
     required String id,
     required String email,
-    String? displayName,
+    String? name,
     String? photoUrl,
-    bool isEmailVerified = false,
+    bool isAuthenticated = false,
   }) : super(
           id: id,
           email: email,
-          displayName: displayName,
+          name: name,
           photoUrl: photoUrl,
-          isEmailVerified: isEmailVerified,
+          isAuthenticated: isAuthenticated,
         );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] ?? '',
       email: json['email'] ?? '',
-      displayName: json['displayName'],
+      name: json['name'],
       photoUrl: json['photoUrl'],
-      isEmailVerified: json['isEmailVerified'] ?? false,
+      isAuthenticated: json['isAuthenticated'] ?? false,
     );
   }
 
@@ -29,9 +29,9 @@ class UserModel extends User {
     return {
       'id': id,
       'email': email,
-      'displayName': displayName,
+      'name': name,
       'photoUrl': photoUrl,
-      'isEmailVerified': isEmailVerified,
+      'isAuthenticated': isAuthenticated,
     };
   }
 
@@ -39,9 +39,9 @@ class UserModel extends User {
     return UserModel(
       id: user.id,
       email: user.email,
-      displayName: user.displayName,
+      name: user.name,
       photoUrl: user.photoUrl,
-      isEmailVerified: user.isEmailVerified,
+      isAuthenticated: user.isAuthenticated,
     );
   }
 
@@ -49,9 +49,9 @@ class UserModel extends User {
     return UserModel(
       id: '',
       email: '',
-      displayName: null,
+      name: null,
       photoUrl: null,
-      isEmailVerified: false,
+      isAuthenticated: false,
     );
   }
 }

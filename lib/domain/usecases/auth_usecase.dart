@@ -1,92 +1,158 @@
 import 'dart:async';
-import '../../data/repositories/auth_repository.dart';
 import '../entities/user.dart';
 
+// Mock for development to avoid Firebase dependency issues
+class MockUser {
+  final String uid;
+  final String? email;
+  final String? displayName;
+  final String? photoURL;
+
+  MockUser({
+    required this.uid,
+    this.email,
+    this.displayName,
+    this.photoURL,
+  });
+}
+
 class AuthUseCase {
-  final AuthRepository _authRepository;
+  // Mock user for development
+  MockUser? _currentUser;
+  final StreamController<MockUser?> _authStateController =
+      StreamController<MockUser?>.broadcast();
 
-  AuthUseCase(this._authRepository);
+  AuthUseCase() {
+    // Initialize the stream with null (not authenticated)
+    _authStateController.add(null);
+  }
 
-  // Factory constructor for creating a mock instance without dependencies
-  factory AuthUseCase.mock() {
-    return _MockAuthUseCase();
+  // Get current user
+  Future<User> getCurrentUser() async {
+    try {
+      if (_currentUser == null) {
+        return const User.empty();
+      }
+      return User(
+        id: _currentUser!.uid,
+        email: _currentUser!.email ?? '',
+        name: _currentUser!.displayName,
+        photoUrl: _currentUser!.photoURL,
+        isAuthenticated: true,
+      );
+    } catch (e) {
+      throw Exception('Error getting current user: $e');
+    }
   }
 
   // Sign in with email and password
-  Future<User> signInWithEmailAndPassword(String email, String password) async {
-    // Validate inputs
-    if (email.isEmpty || password.isEmpty) {
-      throw ArgumentError('Email and password cannot be empty');
-    }
-
-    if (!_isValidEmail(email)) {
-      throw ArgumentError('Invalid email format');
-    }
-
-    if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
-    }
-
+  Future<User> signIn({
+    required String email,
+    required String password,
+    String? name,
+  }) async {
     try {
-      return await _authRepository.signInWithEmailAndPassword(email, password);
+      print('Mock signing in user with email: $email');
+
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      // For development, accept any credentials
+      if (password.length < 6) {
+        throw Exception('Wrong password');
+      }
+
+      // Create mock user
+      _currentUser = MockUser(
+        uid: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
+        email: email,
+        displayName: name ?? 'Test User',
+        photoURL: null,
+      );
+
+      // Notify auth state change
+      _authStateController.add(_currentUser);
+
+      print('Mock user signed in successfully');
+
+      return User(
+        id: _currentUser!.uid,
+        email: email,
+        name: _currentUser!.displayName,
+        photoUrl: _currentUser!.photoURL,
+        isAuthenticated: true,
+      );
     } catch (e) {
-      throw e;
+      throw Exception('Error signing in: $e');
     }
   }
 
-  // Create a new user with email and password
-  Future<User> createUserWithEmailAndPassword(
-      String email, String password) async {
-    // Validate inputs
-    if (email.isEmpty || password.isEmpty) {
-      throw ArgumentError('Email and password cannot be empty');
-    }
-
-    if (!_isValidEmail(email)) {
-      throw ArgumentError('Invalid email format');
-    }
-
-    if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
-    }
-
+  // Sign up with email and password
+  Future<User> signUp({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
     try {
-      return await _authRepository.createUserWithEmailAndPassword(
-          email, password);
-    } catch (e) {
-      throw e;
-    }
-  }
+      print('Mock signing up user with email: $email');
 
-  // Sign in with Google
-  Future<User> signInWithGoogle() async {
-    try {
-      return await _authRepository.signInWithGoogle();
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
+
+      // Validate password
+      if (password.length < 6) {
+        throw Exception('Password must be at least 6 characters');
+      }
+
+      // Create mock user
+      _currentUser = MockUser(
+        uid: 'mock-user-${DateTime.now().millisecondsSinceEpoch}',
+        email: email,
+        displayName: name,
+        photoURL: null,
+      );
+
+      // Notify auth state change
+      _authStateController.add(_currentUser);
+
+      print('Mock user signed up successfully');
+
+      return User(
+        id: _currentUser!.uid,
+        email: email,
+        name: _currentUser!.displayName,
+        photoUrl: _currentUser!.photoURL,
+        isAuthenticated: true,
+      );
     } catch (e) {
-      throw e;
+      throw Exception('Error signing up: $e');
     }
   }
 
   // Sign out
   Future<void> signOut() async {
     try {
-      await _authRepository.signOut();
+      // Simulate network delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      _currentUser = null;
+      _authStateController.add(null);
     } catch (e) {
-      throw e;
-    }
-  }
-
-  // Get current user
-  Future<User> getCurrentUser() async {
-    try {
-      return await _authRepository.getCurrentUser();
-    } catch (e) {
-      throw e;
+      throw Exception('Error signing out: $e');
     }
   }
 
   // Get auth state changes stream
-  Stream<User> get authStateChanges => _authRepository.authStateChanges;
+  Stream<User> get authStateChanges => _authStateController.stream.map(
+        (mockUser) => mockUser == null
+            ? const User.empty()
+            : User(
+                id: mockUser.uid,
+                email: mockUser.email ?? '',
+                name: mockUser.displayName,
+                photoUrl: mockUser.photoURL,
+                isAuthenticated: mockUser != null,
+              ),
+      );
 
   // Send password reset email
   Future<void> sendPasswordResetEmail(String email) async {
@@ -99,154 +165,17 @@ class AuthUseCase {
     }
 
     try {
-      await _authRepository.sendPasswordResetEmail(email);
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
+      print('Mock password reset email sent to: $email');
     } catch (e) {
-      throw e;
+      throw Exception('Error sending password reset email: $e');
     }
   }
 
   // Helper method to validate email format
   bool _isValidEmail(String email) {
-    final emailRegExp = RegExp(
-      r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+',
-    );
+    final emailRegExp = RegExp(r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+');
     return emailRegExp.hasMatch(email);
-  }
-}
-
-// Mock implementation for testing purposes
-class _MockAuthUseCase implements AuthUseCase {
-  @override
-  AuthRepository get _authRepository => throw UnimplementedError();
-
-  final StreamController<User> _authStateController =
-      StreamController<User>.broadcast();
-
-  // Mock authentication state
-  User? _currentUser;
-
-  _MockAuthUseCase() {
-    // Initialize with no authenticated user
-    _currentUser = null;
-  }
-
-  @override
-  Future<User> signInWithEmailAndPassword(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (email.isEmpty || password.isEmpty) {
-      throw ArgumentError('Email and password cannot be empty');
-    }
-
-    if (!_isValidEmail(email)) {
-      throw ArgumentError('Invalid email format');
-    }
-
-    if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
-    }
-
-    // Create a mock user
-    _currentUser = User(
-      id: 'mock-user-id',
-      email: email,
-      displayName: email.split('@')[0],
-      photoUrl: 'https://ui-avatars.com/api/?name=${email.split('@')[0]}',
-      isEmailVerified: true,
-    );
-
-    _authStateController.add(_currentUser!);
-    return _currentUser!;
-  }
-
-  @override
-  Future<User> createUserWithEmailAndPassword(
-      String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (email.isEmpty || password.isEmpty) {
-      throw ArgumentError('Email and password cannot be empty');
-    }
-
-    if (!_isValidEmail(email)) {
-      throw ArgumentError('Invalid email format');
-    }
-
-    if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
-    }
-
-    // Create a mock user
-    _currentUser = User(
-      id: 'mock-user-id',
-      email: email,
-      displayName: 'New User',
-      photoUrl: null,
-      isEmailVerified: false,
-    );
-
-    _authStateController.add(_currentUser!);
-    return _currentUser!;
-  }
-
-  @override
-  Future<User> signInWithGoogle() async {
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // Create a mock user
-    _currentUser = User(
-      id: 'mock-google-user-id',
-      email: 'google-user@example.com',
-      displayName: 'Google User',
-      photoUrl: 'https://ui-avatars.com/api/?name=Google+User',
-      isEmailVerified: true,
-    );
-
-    _authStateController.add(_currentUser!);
-    return _currentUser!;
-  }
-
-  @override
-  Future<void> signOut() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    _currentUser = null;
-    _authStateController.add(_currentUser ?? User.empty());
-  }
-
-  @override
-  Future<User> getCurrentUser() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return _currentUser ?? User.empty();
-  }
-
-  @override
-  Stream<User> get authStateChanges => _authStateController.stream;
-
-  @override
-  Future<void> sendPasswordResetEmail(String email) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (email.isEmpty) {
-      throw ArgumentError('Email cannot be empty');
-    }
-
-    if (!_isValidEmail(email)) {
-      throw ArgumentError('Invalid email format');
-    }
-
-    // Simulate success (no action needed in mock)
-  }
-
-  @override
-  bool _isValidEmail(String email) {
-    final emailRegExp = RegExp(
-      r'^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+',
-    );
-    return emailRegExp.hasMatch(email);
-  }
-
-  // Clean up resources when done
-  void dispose() {
-    _authStateController.close();
   }
 }

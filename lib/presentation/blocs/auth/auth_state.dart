@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-
-import '../../../domain/entities/user.dart';
+import '../../../domain/entities/user.dart' as app_user;
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -14,7 +14,7 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class Authenticated extends AuthState {
-  final User user;
+  final app_user.User user;
 
   const Authenticated(this.user);
 
@@ -36,3 +36,7 @@ class AuthError extends AuthState {
 class PasswordResetSent extends AuthState {
   const PasswordResetSent();
 }
+
+class SignUpSuccess extends AuthState {}
+
+class SignInSuccess extends AuthState {}

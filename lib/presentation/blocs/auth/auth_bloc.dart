@@ -2,35 +2,30 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/usecases/auth_usecase.dart';
+import '../../../domain/entities/user.dart' as app_user;
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthUseCase _authUseCase;
-  StreamSubscription? _authSubscription;
 
   AuthBloc(this._authUseCase) : super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
-    on<SignInWithEmailPasswordRequested>(_onSignInWithEmailPasswordRequested);
-    on<SignInWithGoogleRequested>(_onSignInWithGoogleRequested);
-    on<SignUpWithEmailPasswordRequested>(_onSignUpWithEmailPasswordRequested);
+    on<SignInRequested>(_onSignInRequested);
+    on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
-    on<ResetPasswordRequested>(_onResetPasswordRequested);
-    on<AuthStateChanged>(_onAuthStateChanged);
-
-    // Listen to auth state changes
-    _authSubscription = _authUseCase.authStateChanges.listen(
-      (user) => add(AuthStateChanged(user)),
-    );
+    on<ResetAuthState>(_onResetAuthState);
   }
 
-  // Factory constructor that doesn't require dependencies
-  factory AuthBloc.noAuth() {
-    return AuthBloc(AuthUseCase.mock());
+  // Factory constructor for easier initialization
+  factory AuthBloc.create() {
+    return AuthBloc(AuthUseCase());
   }
 
-  Future<void> _onAuthCheckRequested(
-      AuthCheckRequested event, Emitter<AuthState> emit) async {
+  void _onAuthCheckRequested(
+    AuthCheckRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
       final user = await _authUseCase.getCurrentUser();
@@ -44,47 +39,51 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onSignInWithEmailPasswordRequested(
-      SignInWithEmailPasswordRequested event, Emitter<AuthState> emit) async {
+  void _onSignInRequested(
+    SignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
-      final user = await _authUseCase.signInWithEmailAndPassword(
-        event.email,
-        event.password,
+      print('Attempting to sign in user: ${event.email}');
+      final user = await _authUseCase.signIn(
+        email: event.email,
+        password: event.password,
       );
+      print('Sign in successful for user: ${user.email}');
+      emit(SignInSuccess());
       emit(Authenticated(user));
     } catch (e) {
+      print('Sign in error: $e');
       emit(AuthError(e.toString()));
     }
   }
 
-  Future<void> _onSignInWithGoogleRequested(
-      SignInWithGoogleRequested event, Emitter<AuthState> emit) async {
+  void _onSignUpRequested(
+    SignUpRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
-      final user = await _authUseCase.signInWithGoogle();
-      emit(Authenticated(user));
-    } catch (e) {
-      emit(AuthError(e.toString()));
-    }
-  }
-
-  Future<void> _onSignUpWithEmailPasswordRequested(
-      SignUpWithEmailPasswordRequested event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    try {
-      final user = await _authUseCase.createUserWithEmailAndPassword(
-        event.email,
-        event.password,
+      print('Attempting to sign up user: ${event.email}');
+      final user = await _authUseCase.signUp(
+        email: event.email,
+        password: event.password,
+        name: event.name,
       );
+      print('Sign up successful for user: ${user.email}');
+      emit(SignUpSuccess());
       emit(Authenticated(user));
     } catch (e) {
+      print('Sign up error: $e');
       emit(AuthError(e.toString()));
     }
   }
 
-  Future<void> _onSignOutRequested(
-      SignOutRequested event, Emitter<AuthState> emit) async {
+  void _onSignOutRequested(
+    SignOutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
       await _authUseCase.signOut();
@@ -94,29 +93,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onResetPasswordRequested(
-      ResetPasswordRequested event, Emitter<AuthState> emit) async {
-    emit(AuthLoading());
-    try {
-      await _authUseCase.sendPasswordResetEmail(event.email);
-      emit(const PasswordResetSent());
-    } catch (e) {
-      emit(AuthError(e.toString()));
-    }
-  }
-
-  Future<void> _onAuthStateChanged(
-      AuthStateChanged event, Emitter<AuthState> emit) async {
-    if (event.user.isAuthenticated) {
-      emit(Authenticated(event.user));
-    } else {
-      emit(Unauthenticated());
-    }
-  }
-
-  @override
-  Future<void> close() {
-    _authSubscription?.cancel();
-    return super.close();
+  void _onResetAuthState(
+    ResetAuthState event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(AuthInitial());
   }
 }

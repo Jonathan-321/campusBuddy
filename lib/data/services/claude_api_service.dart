@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../utils/env_config.dart';
 
 /// Service to interact with Claude API
 class ClaudeApiService {
@@ -16,25 +17,45 @@ class ClaudeApiService {
   final String apiKey;
   final String model;
 
+  /// Creates a ClaudeApiService with the given API key and model
   ClaudeApiService({
-    required this.apiKey,
-    this.model = 'claude-3-haiku-20240307',
-  });
+    String? apiKey,
+    String? model,
+  })  : apiKey = apiKey ?? EnvConfig.claudeApiKey,
+        model = model ?? EnvConfig.claudeModel;
 
   /// Send a message to Claude API with conversation history for context
-  Future<Map<String, dynamic>> sendMessage({
-    required String userMessage,
-    required List<Map<String, String>> messageHistory,
-    double temperature = 0.7,
-    int maxTokens = 1024,
-    String systemPrompt = 'You are Campus Oracle, a helpful AI assistant for university students. '
-        'You specialize in providing information about school events, class schedules, '
-        'and the campus directory including places and contact numbers. '
-        'Be informative about campus locations, upcoming events, course schedules, and who to contact for various services. '
-        'Create realistic examples when needed about classes, courses, events, and campus locations. '
-        'Be concise, friendly, and helpful. Focus on helping students easily navigate and use campus resources. '
-        'Do not engage with topics unrelated to campus life or academic questions.',
-  }) async {
+  Future<Map<String, dynamic>> sendMessage(
+      {required String userMessage,
+      required List<Map<String, String>> messageHistory,
+      double temperature = 0.7,
+      int maxTokens = 1024,
+      String systemPrompt = 'You are Campus Buddy, the official AI assistant for Oklahoma Christian University students. '
+          'You have comprehensive and authoritative information about Oklahoma Christian University (OC) including: '
+          'course offerings, class schedules, academic departments, campus locations, contact information, '
+          'housing options, meal plans, upcoming events, services, and important academic dates. '
+          'When answering questions about course offerings and schedules: '
+          '- Provide specific details about what classes are being offered in the current or upcoming semesters '
+          '- State when classes are scheduled (days, times, building locations) '
+          '- Identify which professors are teaching specific courses when known '
+          '- Include information about course prerequisites and credit hours '
+          '- Reference registration deadlines and procedures '
+          '- Suggest related or complementary courses when relevant '
+          'Be confident and direct with your knowledge. Do not use phrases like "I believe," "I think," or "I\'m not sure." '
+          'If information is factual and in your knowledge base, state it authoritatively. '
+          'Never apologize for providing information that\'s correct and helpful. '
+          'When answering questions, always prioritize Oklahoma Christian University data provided to you. '
+          'Be comprehensive about OC\'s academic colleges, departments, programs, course offerings, and degree requirements. '
+          'Provide specific details like room numbers, phone numbers, email addresses, operating hours, costs, and deadlines. '
+          'Focus on helping students navigate academic planning, course selection, and registration. '
+          'For student life questions, provide detailed information about OC\'s housing options, meal plans, spiritual life, and athletics. '
+          'If asked about something for which you genuinely don\'t have specific information, briefly acknowledge this '
+          'and immediately suggest the most relevant OC resource (specific department, office, website) where the student can find that information. '
+          'Always respond in the same language as the user\'s message. '
+          'If the user\'s message is in English, respond in English. '
+          'If the user\'s message is in Spanish, respond in Spanish. '
+          'If the user\'s message is in French, respond in French. '
+          'If the user\'s message is in Kinyarwanda, respond in Kinyarwanda.'}) async {
     try {
       // For web platform, we need to handle CORS issues
       // In a real-world scenario, you should have a backend proxy
@@ -53,13 +74,30 @@ class ClaudeApiService {
         headers['X-Requested-With'] = 'XMLHttpRequest';
       }
 
+      // Ensure messageHistory contains valid content
+      final validMessageHistory = messageHistory.where((msg) {
+        return msg.containsKey('content') &&
+            msg['content'] != null &&
+            msg['content']!.isNotEmpty;
+      }).toList();
+
+      // Add the current user message
+      validMessageHistory.add({
+        'role': 'user',
+        'content': userMessage,
+      });
+
       // Make the API request
+      debugPrint(
+          'Sending request to Claude API with ${validMessageHistory.length} messages');
+      debugPrint('System prompt length: ${systemPrompt.length} characters');
+
       final response = await http.post(
         Uri.parse(effectiveUrl),
         headers: headers,
         body: jsonEncode({
           'model': model,
-          'messages': messageHistory,
+          'messages': validMessageHistory,
           'system': systemPrompt,
           'max_tokens': maxTokens,
           'temperature': temperature,
@@ -67,10 +105,13 @@ class ClaudeApiService {
       );
 
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final responseData = jsonDecode(response.body);
+        debugPrint('Received successful response from Claude API');
+        return responseData;
       } else {
         debugPrint('API Error [${response.statusCode}]: ${response.body}');
-        throw Exception('Failed to get response: ${response.statusCode}');
+        throw Exception(
+            'Failed to get response: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       debugPrint('Exception in sendMessage: $e');
@@ -91,6 +132,26 @@ class ClaudeApiService {
       }
 
       rethrow;
+    }
+  }
+
+  /// Convert a simple message to the format Claude expects
+  Future<String> getSimpleCompletion(String message) async {
+    try {
+      final response = await sendMessage(
+        userMessage: message,
+        messageHistory: [],
+      );
+
+      if (response.containsKey('content') &&
+          response['content'] is List &&
+          response['content'].isNotEmpty) {
+        return response['content'][0]['text'];
+      }
+
+      return 'Error: Unable to parse response from Claude API';
+    } catch (e) {
+      return 'Error: $e';
     }
   }
 }

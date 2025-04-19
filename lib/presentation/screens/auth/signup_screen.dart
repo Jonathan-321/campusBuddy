@@ -34,11 +34,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _signup() {
     if (_formKey.currentState!.validate() && _agreeToTerms) {
+      // Debug info
+      print('Attempting signup with email: ${_emailController.text}');
+
       // Use the AuthBloc to handle registration
       context.read<AuthBloc>().add(
-            SignUpWithEmailPasswordRequested(
+            SignUpRequested(
               email: _emailController.text,
               password: _passwordController.text,
+              name: _nameController.text,
             ),
           );
     } else if (!_agreeToTerms) {
@@ -46,6 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
         const SnackBar(
           content: Text('Please agree to the Terms and Conditions'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
     }
@@ -56,19 +61,44 @@ class _SignupScreenState extends State<SignupScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          // Navigate to home screen when authenticated
-          context.go('/home');
+          // We don't want to automatically log in the user after signup
+          // Instead, redirect to login page and show success message
+          print('Signup successful, redirecting to login page');
+
+          // Add a small delay to ensure state updates complete
+          Future.delayed(Duration.zero, () {
+            // Sign out the user to require login
+            context.read<AuthBloc>().add(SignOutRequested());
+
+            // Navigate to login screen with a success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created successfully! Please log in.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 3),
+              ),
+            );
+
+            // Navigate to login page
+            context.go('/login');
+          });
+        } else if (state is SignUpSuccess) {
+          print('Signup successful (SignUpSuccess), waiting for redirect');
+          // No navigation here as listener will handle the Authenticated state
         } else if (state is AuthError) {
-          // Show error message
+          // Show error message with details
+          print('Signup error: ${state.message}');
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
           );
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Create Account'),
-        ),
+        appBar: AppBar(title: const Text('Create Account')),
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -80,11 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // App logo
-                    const Icon(
-                      Icons.school,
-                      size: 64,
-                      color: Colors.blue,
-                    ),
+                    const Icon(Icons.school, size: 64, color: Colors.blue),
                     const SizedBox(height: 16),
 
                     // App name
@@ -102,10 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const Text(
                       'Create your account to get started',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
                     ),
                     const SizedBox(height: 32),
 
@@ -143,8 +166,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your email';
                         }
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(value)) {
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value)) {
                           return 'Please enter a valid email';
                         }
                         return null;
