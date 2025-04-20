@@ -57,7 +57,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'app.dart';
-import 'firebase_options.dart';
+import 'utils/firebase_config.dart';
 import 'utils/env_config.dart';
 import 'data/services/ai_service.dart';
 import 'domain/usecases/auth_usecase.dart';
@@ -86,12 +86,20 @@ Future<void> main() async {
         'Warning: AI configuration is incomplete. Some features may not work.');
   }
 
+  // Validate Firebase configuration
+  if (SecureFirebaseOptions.validateFirebaseConfig()) {
+    debugPrint('Firebase configuration validated successfully');
+  } else {
+    debugPrint(
+        'Warning: Firebase configuration is incomplete. Some features may not work.');
+  }
+
   // Initialize Firebase safely (only if not already initialized)
   try {
     // Check if Firebase is already initialized to avoid duplicate initialization
     if (!Firebase.apps.isNotEmpty) {
       await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
+        options: SecureFirebaseOptions.currentPlatform,
       );
       debugPrint('Firebase initialized successfully');
     } else {
